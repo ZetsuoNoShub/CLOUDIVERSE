@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOUDIVERSE — Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #08070f;
+  --bg2:     #0d0b18;
+  --bg3:     #111020;
+  --surface: rgba(255,255,255,.04);
+  --surfh:   rgba(255,255,255,.07);
+  --glass:   rgba(138,92,246,.08);
+  --violet:  #8a5cf6;
+  --violet2: #6d3dd4;
+  --violet3: #a78bfa;
+  --violet4: rgba(138,92,246,.15);
+  --glow:    0 0 20px rgba(138,92,246,.4);
+  --glow2:   0 0 40px rgba(138,92,246,.2);
+  --red:     #f43f5e;
+  --green:   #34d399;
+  --yellow:  #fbbf24;
+  --text:    #e8e4f0;
+  --muted:   #6b6485;
+  --border:  rgba(138,92,246,.18);
+  --border2: rgba(255,255,255,.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── VOID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(138,92,246,.15) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(109,61,212,.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 30% at 10% 90%, rgba(67,56,202,.06) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── GRID TEXTURE ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(138,92,246,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138,92,246,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  z-index: 200;
+}
+
+#login-screen::before {
+  content: 'VOID';
+  position: absolute;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(120px, 20vw, 320px);
+  font-weight: 700; font-style: italic;
+  color: rgba(138,92,246,.04);
+  letter-spacing: -8px;
+  pointer-events: none;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.login-card {
+  position: relative; z-index: 1;
+  width: 420px;
+  background: rgba(13,11,24,.8);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  padding: 56px 48px;
+  box-shadow: var(--glow2), inset 0 1px 0 rgba(138,92,246,.2);
+}
+
+.login-ornament {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 32px;
+}
+.login-ornament::before,
+.login-ornament::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+.login-diamond {
+  width: 8px; height: 8px;
+  background: var(--violet);
+  transform: rotate(45deg);
+  box-shadow: var(--glow);
+}
+
+.login-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px; font-weight: 700; font-style: italic;
+  color: var(--text); text-align: center;
+  letter-spacing: -1px; margin-bottom: 4px; line-height: 1;
+}
+
+.login-sub {
+  text-align: center;
+  font-size: 9px; letter-spacing: 5px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 40px;
+}
+
+.field-wrap { margin-bottom: 16px; }
+
+.field-label {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px; display: block;
+}
+
+input[type="password"],
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border2);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  padding: 13px 16px;
+  outline: none;
+  transition: all .2s;
+  appearance: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--violet);
+  background: rgba(138,92,246,.06);
+  box-shadow: 0 0 0 3px rgba(138,92,246,.1);
+}
+
+.btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 3px; text-transform: uppercase;
+  padding: 14px 24px; border: none; cursor: pointer;
+  transition: all .2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  position: relative;
+}
+
+.btn-gold {
+  background: var(--violet);
+  color: #fff; width: 100%;
+  box-shadow: var(--glow);
+}
+.btn-gold:hover {
+  background: var(--violet2);
+  box-shadow: 0 0 30px rgba(138,92,246,.6);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-outline:hover { border-color: var(--violet); color: var(--violet3); }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid rgba(244,63,94,.25);
+  color: var(--red);
+  font-size: 9px; padding: 7px 12px;
+}
+.btn-danger:hover { background: var(--red); color: #fff; box-shadow: 0 0 12px rgba(244,63,94,.4); }
+
+.btn-sm { font-size: 9px; padding: 8px 14px; }
+
+.login-err {
+  font-size: 11px; color: var(--red);
+  text-align: center; margin-top: 12px; min-height: 18px;
+}
+
+/* ── APP ── */
+#app { display: none; position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+.header {
+  background: rgba(8,7,15,.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 0 var(--border), 0 4px 24px rgba(0,0,0,.4);
+}
+
+.header-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700; font-style: italic;
+  color: var(--text); letter-spacing: -0.5px;
+}
+.header-logo span { color: var(--violet); text-shadow: var(--glow); }
+
+.header-nav { display: flex; gap: 2px; }
+
+.nav-tab {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); padding: 10px 18px; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  font-family: 'DM Mono', monospace;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--violet3); border-bottom-color: var(--violet); }
+
+.header-right { display: flex; align-items: center; gap: 20px; }
+.header-time { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--violet3);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--violet);
+  box-shadow: var(--glow);
+  animation: livepulse 2s ease-in-out infinite;
+}
+@keyframes livepulse { 0%,100% { opacity:1; box-shadow: var(--glow); } 50% { opacity:.4; box-shadow: none; } }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: rgba(8,7,15,.6);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--border);
+  padding: 32px 0;
+  display: flex; flex-direction: column;
+}
+
+.sidebar-section {
+  font-size: 8px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--muted); padding: 0 24px; margin: 20px 0 8px;
+}
+.sidebar-section:first-child { margin-top: 0; }
+
+.tier-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 24px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 1px;
+  color: var(--muted); cursor: pointer;
+  background: none; border: none; width: 100%; text-align: left;
+  border-left: 2px solid transparent;
+  transition: all .15s; text-transform: capitalize;
+}
+.tier-btn:hover { color: var(--text); background: var(--surfh); }
+.tier-btn.active {
+  color: var(--violet3); border-left-color: var(--violet);
+  background: var(--glass); font-weight: 500;
+}
+
+.tier-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); }
+.tier-btn.active .tier-dot { background: var(--violet); box-shadow: var(--glow); }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 16px 24px; }
+
+/* ── MAIN ── */
+.main { padding: 40px 48px; overflow-y: auto; }
+
+/* ── PAGE ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 36px; padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-eyebrow {
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--violet); margin-bottom: 6px;
+  text-shadow: var(--glow);
+}
+
+.page-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px; font-weight: 700; font-style: italic;
+  color: var(--text); letter-spacing: -2px; line-height: 1;
+}
+
+/* ── STAT ROW ── */
+.stat-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 32px;
+}
+
+.stat-cell {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  padding: 24px 28px;
+  position: relative; overflow: hidden;
+  transition: all .2s;
+}
+.stat-cell::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--violet), transparent);
+  opacity: 0; transition: opacity .2s;
+}
+.stat-cell:hover { border-color: var(--violet); box-shadow: var(--glow2); }
+.stat-cell:hover::before { opacity: 1; }
+
+.stat-label {
+  font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+}
+.stat-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 44px; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.stat-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border2);
+  padding: 32px; margin-bottom: 24px;
+  transition: border-color .2s;
+}
+.card:hover { border-color: var(--border); }
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.card-title {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── TABLE ── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-size: 8px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: rgba(138,92,246,.04);
+}
+.data-table td {
+  padding: 14px; font-size: 12px;
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--glass); }
+
+/* ── TIER PILL ── */
+.tier-pill {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 10px; border: 1px solid; display: inline-block;
+}
+.tp-free    { color: #34d399; border-color: rgba(52,211,153,.3);  background: rgba(52,211,153,.06); }
+.tp-booster { color: #fbbf24; border-color: rgba(251,191,36,.3);  background: rgba(251,191,36,.06); }
+.tp-premium { color: var(--violet3); border-color: var(--border); background: var(--glass); }
+.tp-god     { color: var(--red); border-color: rgba(244,63,94,.3); background: rgba(244,63,94,.06); }
+.tp-send    { color: var(--muted); border-color: var(--border2); background: var(--surface); }
+.tp-hidden  { color: var(--text); border-color: var(--border);   background: rgba(255,255,255,.04); }
+
+/* ── STOCK BADGE ── */
+.stock-badge {
+  font-size: 11px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.stock-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.sb-green { color: var(--green); }
+.sb-green::before { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.sb-yellow { color: var(--yellow); }
+.sb-yellow::before { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+.sb-red { color: var(--red); }
+.sb-red::before { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ── SERVICE CARDS ── */
+.svc-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.svc-card {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border2);
+  padding: 20px 24px; cursor: pointer;
+  transition: all .2s; position: relative; overflow: hidden;
+}
+.svc-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, var(--violet2), var(--violet3));
+  opacity: 0; transition: opacity .2s;
+}
+.svc-card::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(138,92,246,.08) 0%, transparent 60%);
+  opacity: 0; transition: opacity .2s;
+}
+.svc-card:hover { border-color: var(--border); box-shadow: var(--glow2); }
+.svc-card:hover::before, .svc-card:hover::after { opacity: 1; }
+.svc-card.selected { border-color: var(--violet); box-shadow: var(--glow2); }
+.svc-card.selected::before, .svc-card.selected::after { opacity: 1; }
+
+.svc-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 700; font-style: italic;
+  color: var(--text); margin-bottom: 8px; position: relative; z-index: 1;
+}
+.svc-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; position: relative; z-index: 1; }
+.svc-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; position: relative; z-index: 1; }
+
+.svc-cd-input {
+  width: 56px; font-size: 11px; padding: 5px 8px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace; text-align: center;
+}
+
+/* ── FORM ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.form-group.full { grid-column: 1 / -1; }
+
+/* ── SPLIT MODE ── */
+.split-modes { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+.split-opt {
+  padding: 12px; text-align: center;
+  border: 1px solid var(--border2); cursor: pointer;
+  transition: all .15s; background: var(--surface);
+  font-family: 'DM Mono', monospace;
+}
+.split-opt .st { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.split-opt .sd { font-size: 9px; color: var(--muted); margin-top: 3px; opacity: .7; }
+.split-opt:hover { border-color: var(--border); }
+.split-opt.active { border-color: var(--violet); background: var(--glass); }
+.split-opt.active .st { color: var(--violet3); }
+
+/* ── PROGRESS ── */
+.progress-wrap { display: none; margin: 16px 0; }
+.progress-track { height: 2px; background: var(--border2); overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--violet2), var(--violet3)); transition: width .3s; width: 0%; box-shadow: var(--glow); }
+.progress-label { font-size: 10px; color: var(--violet3); margin-top: 6px; letter-spacing: 2px; }
+
+/* ── CODES LIST ── */
+.codes-list { max-height: 440px; overflow-y: auto; }
+.codes-list::-webkit-scrollbar { width: 4px; }
+.codes-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.code-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--border2);
+}
+.code-row:last-child { border-bottom: none; }
+.code-row:hover { background: var(--glass); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+
+.code-text {
+  flex: 1; font-size: 11px; color: var(--text);
+  white-space: pre-wrap; word-break: break-all;
+  line-height: 1.6; font-family: 'DM Mono', monospace; opacity: .8;
+}
+
+.code-badge {
+  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 3px 8px; flex-shrink: 0; margin-top: 2px; border: 1px solid;
+}
+.cb-avail { color: var(--green); border-color: rgba(52,211,153,.3); }
+.cb-used  { color: var(--muted); border-color: var(--border2); }
+
+/* ── OVERLAY / MODAL ── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,3,10,.8);
+  backdrop-filter: blur(16px);
+  z-index: 100; display: none;
+  align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: rgba(13,11,24,.95);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--violet);
+  padding: 48px; width: 100%; max-width: 580px;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+  box-shadow: var(--glow2), 0 24px 64px rgba(0,0,0,.6);
+}
+
+.modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 700; font-style: italic;
+  color: var(--text); letter-spacing: -1px; margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 32px;
+}
+.modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 32px; right: 32px;
+  background: rgba(13,11,24,.95);
+  backdrop-filter: blur(12px);
+  color: var(--text);
+  padding: 14px 22px;
+  font-size: 11px; letter-spacing: 1px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--violet);
+  box-shadow: var(--glow2);
+  transform: translateY(60px); opacity: 0;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 9999;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.err  { border-left-color: var(--red); box-shadow: 0 0 20px rgba(244,63,94,.2); }
+
+/* ── STEPPED TOGGLE ── */
+.toggle-btn {
+  padding: 10px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--muted);
+  cursor: pointer; transition: all .15s; width: 100%; margin-bottom: 16px;
+}
+.toggle-btn.on {
+  background: var(--glass); color: var(--violet3);
+  border-color: var(--violet); box-shadow: var(--glow2);
+}
+
+/* ── FILE INPUT ── */
+input[type="file"] {
+  font-size: 11px; color: var(--muted);
+  background: var(--surface); border: 1px dashed var(--border);
+  padding: 14px; width: 100%; cursor: pointer;
+}
+input[type="file"]::-webkit-file-upload-button {
+  background: var(--violet); color: #fff; border: none;
+  padding: 8px 16px; font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; margin-right: 16px;
+  box-shadow: var(--glow);
+}
+
+/* ── EDIT AREA ── */
+.edit-area {
+  width: 100%; height: 120px; resize: vertical;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  background: rgba(138,92,246,.06); border: 1px solid var(--violet);
+  color: var(--text); padding: 12px; outline: none;
+  box-shadow: inset 0 0 12px rgba(138,92,246,.08);
+}
+
+.empty-state {
+  text-align: center; padding: 60px;
+  font-size: 10px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase;
+}
+
+select option { background: #0d0b18; color: var(--text); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--violet); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .stat-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-ornament"><div class="login-diamond"></div></div>
+    <div class="login-title">Cloudiverse</div>
+    <div class="login-sub">Inventory Control System</div>
+    <div class="field-wrap">
+      <label class="field-label">Access Key</label>
+      <input type="password" id="pw" placeholder="Enter terminal key..." autocomplete="off">
+    </div>
+    <button class="btn btn-gold" onclick="doLogin()" style="margin-top:8px">Enter System</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <div class="header">
+    <div class="header-logo">Cloud<span>iverse</span></div>
+    <nav class="header-nav">
+      <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
+      <button class="nav-tab" onclick="showPage('services',this)">Services</button>
+      <button class="nav-tab" onclick="showPage('upload',this)">Stock</button>
+      <button class="nav-tab" onclick="showPage('inventory',this)">Inventory</button>
+    </nav>
+    <div class="header-right">
+      <span class="header-time" id="htime"></span>
+      <div class="live-badge"><div class="live-dot"></div>Live</div>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Exit</button>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">Tiers</div>
+      <button class="tier-btn active" onclick="setTier('free',this)"><span>Free</span><span class="tier-dot"></span></button>
+      <button class="tier-btn" onclick="setTier('booster',this)"><span>Booster</span><span class="tier-dot"></span></button>
+      <button class="tier-btn" onclick="setTier('premium',this)"><span>Premium</span><span class="tier-dot"></span></button>
+      <button class="tier-btn" onclick="setTier('god',this)"><span>God</span><span class="tier-dot"></span></button>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">Special</div>
+      <button class="tier-btn" onclick="setTier('send',this)"><span>Send</span><span class="tier-dot"></span></button>
+      <button class="tier-btn" onclick="setTier('hidden',this)"><span>Hidden</span><span class="tier-dot"></span></button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Overview</div>
+            <div class="page-title">Dashboard</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-cell">
+            <div class="stat-label">Total Services</div>
+            <div class="stat-val" id="s-total">—</div>
+            <div class="stat-sub">All tiers</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Available Units</div>
+            <div class="stat-val" id="s-avail">—</div>
+            <div class="stat-sub">Unsent accounts</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Delivered</div>
+            <div class="stat-val" id="s-used">—</div>
+            <div class="stat-sub">All time</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Stock Overview</div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Service</th><th>Tier</th><th>Available</th><th>Sent</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dash-body">
+              <tr><td colspan="5" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SERVICES -->
+      <div class="page" id="page-services">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow" id="svc-eyebrow">Free Tier</div>
+            <div class="page-title">Services</div>
+          </div>
+          <button class="btn btn-gold btn-sm" onclick="openNewSvc()">+ New Service</button>
+        </div>
+
+        <div id="svc-grid" class="svc-grid">
+          <div class="empty-state" style="grid-column:1/-1">Loading...</div>
+        </div>
+
+        <!-- Inventory panel shown when service selected -->
+        <div id="inv-panel" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title" id="inv-title">Inventory</div>
+              <div style="display:flex;gap:10px;align-items:center">
+                <span style="font-size:11px;color:var(--muted)" id="inv-counts"></span>
+                <button class="btn btn-danger btn-sm" onclick="purgeUsed()">Purge Sent</button>
+                <button class="btn btn-gold btn-sm" onclick="openRestock()">+ Restock</button>
+              </div>
+            </div>
+            <div class="codes-list" id="codes-list">
+              <div class="empty-state">Select a service</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD (quick restock) -->
+      <div class="page" id="page-upload">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Inject</div>
+            <div class="page-title">Upload Stock</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Target Service</div></div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="field-label">Service</label>
+              <select id="up-svc"><option value="">-- select --</option></select>
+            </div>
+            <div class="form-group" style="justify-content:flex-end">
+              <label class="field-label">&nbsp;</label>
+              <button class="btn btn-outline" onclick="loadUploadSvcs()" style="height:47px">↻ Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Split Mode</div></div>
+          <div class="split-modes">
+            <div class="split-opt active" onclick="setSplit('line',this)">
+              <div class="st">Per Line</div><div class="sd">1 line = 1 account</div>
+            </div>
+            <div class="split-opt" onclick="setSplit('file',this)">
+              <div class="st">Per File</div><div class="sd">1 file = 1 account</div>
+            </div>
+            <div class="split-opt" onclick="setSplit('custom',this)">
+              <div class="st">Delimiter</div><div class="sd">Split by separator</div>
+            </div>
+          </div>
+          <div id="delim-wrap" style="display:none;margin-bottom:16px">
+            <label class="field-label">Delimiter</label>
+            <input type="text" id="delim-val" value="---" placeholder='--- or \n\n'>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Accounts Data</div></div>
+          <div class="form-group">
+            <label class="field-label">Upload File(s)</label>
+            <input type="file" id="file-in" multiple accept=".txt" onchange="handleFiles()">
+          </div>
+          <div id="file-preview" style="display:none;padding:10px;background:var(--cream);border:1px solid var(--border);margin-bottom:16px;font-size:11px;color:var(--gold2)"></div>
+          <div class="form-group">
+            <label class="field-label">Or paste manually</label>
+            <textarea id="manual-in" rows="8" placeholder="email:pass&#10;email2:pass2" style="resize:vertical"></textarea>
+          </div>
+          <div class="progress-wrap" id="up-progress">
+            <div class="progress-track"><div class="progress-fill" id="up-fill"></div></div>
+            <div class="progress-label" id="up-label">0% Injected</div>
+          </div>
+          <button class="btn btn-gold" style="max-width:220px" id="up-btn" onclick="doUpload()">↑ Inject Stock</button>
+        </div>
+      </div>
+
+      <!-- INVENTORY -->
+      <div class="page" id="page-inventory">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Browse</div>
+            <div class="page-title">Inventory</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:16px;align-items:flex-end;margin-bottom:24px">
+            <div style="flex:1">
+              <label class="field-label">Service</label>
+              <select id="inv-sel" onchange="loadInv()"><option value="">-- select service --</option></select>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadInvSvcs()" style="height:47px">↻</button>
+            <button class="btn btn-danger btn-sm" onclick="purgeUsedInv()" id="purge-inv-btn" disabled style="height:47px">Purge Sent</button>
+          </div>
+          <div id="inv-stat" style="font-size:11px;color:var(--muted);margin-bottom:16px"></div>
+          <div class="codes-list" id="inv-list">
+            <div class="empty-state">Select a service to view inventory</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+</div><!-- /app -->
+
+<!-- ── NEW SERVICE MODAL ── -->
+<div class="overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-title">New Service</div>
+    <div class="modal-sub">Initialize a new inventory module</div>
+    <div class="form-group">
+      <label class="field-label">Service Name</label>
+      <input type="text" id="ns-name" placeholder="e.g. netflix">
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Tier</label>
+        <select id="ns-tier">
+          <option value="free">Free</option>
+          <option value="booster">Booster</option>
+          <option value="premium">Premium</option>
+          <option value="god">God</option>
+          <option value="send">Send</option>
+          <option value="hidden">Hidden</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Cooldown (minutes)</label>
+        <input type="number" id="ns-cd" value="0" min="0">
+      </div>
+    </div>
+    <button type="button" id="ns-stepped" class="toggle-btn" onclick="toggleStepped()">Steps Mode: Off</button>
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="createService()">Create Service</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-new')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESTOCK MODAL ── -->
+<div class="overlay" id="modal-restock">
+  <div class="modal">
+    <div class="modal-title">Inject Stock</div>
+    <div class="modal-sub" id="restock-sub">Target: —</div>
+
+    <div class="split-modes" style="margin-bottom:16px">
+      <div class="split-opt active" onclick="setSplitM('line',this)">
+        <div class="st">Per Line</div><div class="sd">1 line = 1 account</div>
+      </div>
+      <div class="split-opt" onclick="setSplitM('file',this)">
+        <div class="st">Per File</div><div class="sd">1 file = 1 account</div>
+      </div>
+      <div class="split-opt" onclick="setSplitM('custom',this)">
+        <div class="st">Delimiter</div><div class="sd">Custom separator</div>
+      </div>
+    </div>
+    <div id="mdelim-wrap" style="display:none;margin-bottom:16px">
+      <label class="field-label">Delimiter</label>
+      <input type="text" id="mdelim-val" value="---">
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">Upload File(s)</label>
+      <input type="file" id="m-file-in" multiple accept=".txt" onchange="handleMFiles()">
+    </div>
+    <div id="m-file-preview" style="display:none;padding:10px;background:var(--cream);border:1px solid var(--border);margin-bottom:12px;font-size:11px;color:var(--gold2)"></div>
+
+    <div class="form-group">
+      <label class="field-label">Or paste manually</label>
+      <textarea id="m-manual" rows="6" placeholder="email:pass&#10;email2:pass2" style="resize:vertical"></textarea>
+    </div>
+
+    <div class="progress-wrap" id="m-progress">
+      <div class="progress-track"><div class="progress-fill" id="m-fill"></div></div>
+      <div class="progress-label" id="m-label">0% Injected</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-gold" id="m-inject-btn" onclick="doModalUpload()">↑ Inject</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-restock')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM ── -->
+<div class="overlay" id="modal-del">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">Confirm Delete</div>
+    <div class="modal-sub" id="del-sub">This will remove the service and all inventory.</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmDel()">Delete Permanently</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-del')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://sqqnskpxxjylsxpazsuk.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcW5za3B4eGp5bHN4cGF6c3VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODg0NTIsImV4cCI6MjA4NzA2NDQ1Mn0.TQudtoQgsW_9FYXPuTFWpO6AnZpdQimzr6kAyVFzrFA';
+const ADMIN_PASS    = '_CLOUDIVERSE_';
+
+// ══════════════════════════════════════════════════
+//  SUPABASE HELPERS
+// ══════════════════════════════════════════════════
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const t = await res.text();
+  return t ? JSON.parse(t) : null;
+}
+
+async function sbCount(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0'
+    }
+  });
+  const cr = res.headers.get('content-range');
+  return cr ? (parseInt(cr.match(/\/(\d+)/)?.[1]) || 0) : 0;
+}
+
+// ══════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+function doLogin() {
+  if (document.getElementById('pw').value === ADMIN_PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    const el = document.getElementById('login-err');
+    el.textContent = 'Access denied — incorrect key';
+    document.getElementById('pw').value = '';
+    setTimeout(() => el.textContent = '', 3000);
+  }
+}
+
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw').value = '';
+}
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+let activeTier = 'free';
+
+function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadDashboard();
+  loadUploadSvcs();
+  loadInvSvcs();
+}
+
+function updateClock() {
+  document.getElementById('htime').textContent = new Date().toUTCString().replace('GMT','UTC');
+}
+
+// ══════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  el.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'services')  loadServices();
+}
+
+function setTier(tier, el) {
+  activeTier = tier;
+  document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('svc-eyebrow').textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' Tier';
+  selectedSvcId = null;
+  document.getElementById('inv-panel').style.display = 'none';
+  loadServices();
+  // auto switch to services page
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector('[onclick="showPage(\'services\',this)"]').classList.add('active');
+  document.getElementById('page-services').classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const svcs = await sb('services?select=id,name,tier&order=name');
+    document.getElementById('s-total').textContent = svcs.length;
+
+    let totalA = 0, totalU = 0;
+    const rows = await Promise.all(svcs.map(async s => {
+      const a = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.false`);
+      const u = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.true`);
+      totalA += a; totalU += u;
+      const cls = a===0?'sb-red':a<5?'sb-yellow':'sb-green';
+      const lbl = a===0?'Out of Stock':a<5?'Low Stock':'In Stock';
+      const tp = `tp-${s.tier}`;
+      return `<tr>
+        <td style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;font-weight:700">${s.name}</td>
+        <td><span class="tier-pill ${tp}">${s.tier}</span></td>
+        <td style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700">${a}</td>
+        <td style="color:var(--muted)">${u}</td>
+        <td><span class="stock-badge ${cls}">${lbl}</span></td>
+      </tr>`;
+    }));
+
+    document.getElementById('s-avail').textContent = totalA;
+    document.getElementById('s-used').textContent  = totalU;
+    document.getElementById('dash-body').innerHTML = rows.join('') ||
+      `<tr><td colspan="5" class="empty-state">No services found</td></tr>`;
+  } catch(e) { toast('Failed to load dashboard', true); }
+}
+
+// ══════════════════════════════════════════════════
+//  SERVICES
+// ══════════════════════════════════════════════════
+let selectedSvcId = null;
+
+async function loadServices() {
+  try {
+    const svcs = await sb(`services?select=id,name,tier,cooldown,is_stepped&tier=eq.${activeTier}&order=name`);
+    const grid = document.getElementById('svc-grid');
+
+    if (!svcs || svcs.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">No services in ${activeTier} tier</div>`;
+      return;
+    }
+
+    const cards = await Promise.all(svcs.map(async s => {
+      const a = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.false`);
+      const cls = a===0?'sb-red':a<5?'sb-yellow':'sb-green';
+      const tp = `tp-${s.tier}`;
+      const sel = selectedSvcId === s.id ? 'selected' : '';
+      return `<div class="svc-card ${sel}" onclick="selectSvc(${s.id},'${s.name}')">
+        <div class="svc-name">${s.name}</div>
+        <div class="svc-meta">
+          <span class="tier-pill ${tp}">${s.tier}</span>
+          <span class="stock-badge ${cls}">${a}</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted)">
+          Cooldown: <strong>${s.cooldown||0}m</strong> &nbsp;·&nbsp; Steps: <strong>${s.is_stepped?'On':'Off'}</strong>
+        </div>
+        <div class="svc-actions">
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();toggleStep(${s.id},${s.is_stepped})">
+            Steps: ${s.is_stepped?'ON':'OFF'}
+          </button>
+          <input type="number" class="svc-cd-input" value="${s.cooldown||0}" min="0"
+            title="Cooldown mins"
+            onclick="event.stopPropagation()"
+            onchange="updateCd(${s.id},this.value)">
+          <span style="font-size:10px;color:var(--muted)">min</span>
+          <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="event.stopPropagation();openDel(${s.id},'${s.name}')">✕</button>
+        </div>
+      </div>`;
+    }));
+
+    grid.innerHTML = cards.join('');
+  } catch(e) { console.error(e); toast('Failed to load services', true); }
+}
+
+async function selectSvc(id, name) {
+  selectedSvcId = id;
+  document.getElementById('inv-panel').style.display = 'block';
+  document.getElementById('inv-title').textContent = `${name.toUpperCase()} — Inventory`;
+  await loadCodes(id);
+  document.querySelectorAll('.svc-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+async function loadCodes(svcId) {
+  const list = document.getElementById('codes-list');
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+
+  try {
+    const total = await sbCount(`codes?service_id=eq.${svcId}`);
+    const avail = await sbCount(`codes?service_id=eq.${svcId}&is_used=eq.false`);
+    document.getElementById('inv-counts').textContent = `${avail} available · ${total - avail} sent · ${total} total`;
+
+    // fetch up to 300
+    const codes = await sb(`codes?service_id=eq.${svcId}&order=is_used.asc,created_at.desc&limit=300`);
+
+    if (!codes || codes.length === 0) {
+      list.innerHTML = '<div class="empty-state">No accounts — restock this service</div>';
+      return;
+    }
+
+    list.innerHTML = codes.map(c => `
+      <div class="code-row" id="cr-${c.id}">
+        ${c._editing ? `
+          <div style="flex:1">
+            <textarea class="edit-area" id="ea-${c.id}">${escHtml(c.code_text)}</textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-gold btn-sm" onclick="saveCode(${c.id},${svcId})">Save</button>
+              <button class="btn btn-outline btn-sm" onclick="loadCodes(${svcId})">Cancel</button>
+            </div>
+          </div>
+        ` : `
+          <pre class="code-text">${escHtml(c.code_text)}</pre>
+          <span class="code-badge ${c.is_used?'cb-used':'cb-avail'}">${c.is_used?'Sent':'Avail'}</span>
+          <button class="btn btn-outline btn-sm" onclick="editCode(${c.id},${svcId})" title="Edit">✎</button>
+          <button class="btn btn-danger btn-sm" onclick="delCode(${c.id},${svcId})" title="Delete">✕</button>
+        `}
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load</div>'; }
+}
+
+async function editCode(id, svcId) {
+  const codes = await sb(`codes?id=eq.${id}&select=id,code_text,is_used`);
+  if (!codes || !codes[0]) return;
+  codes[0]._editing = true;
+  // Re-render just that row
+  const row = document.getElementById(`cr-${id}`);
+  if (!row) return;
+  row.innerHTML = `
+    <div style="flex:1">
+      <textarea class="edit-area" id="ea-${id}">${escHtml(codes[0].code_text)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-gold btn-sm" onclick="saveCode(${id},${svcId})">Save</button>
+        <button class="btn btn-outline btn-sm" onclick="loadCodes(${svcId})">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function saveCode(id, svcId) {
+  const val = document.getElementById(`ea-${id}`)?.value;
+  if (!val) return;
+  await sb(`codes?id=eq.${id}`, { method: 'PATCH', body: { code_text: val }, prefer: 'return=minimal' });
+  toast('✓ Code updated');
+  loadCodes(svcId);
+}
+
+async function delCode(id, svcId) {
+  if (!confirm('Delete this account?')) return;
+  await sb(`codes?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+  toast('✓ Deleted');
+  loadCodes(svcId);
+}
+
+async function purgeUsed() {
+  if (!selectedSvcId) return;
+  if (!confirm('Delete all SENT accounts for this service?')) return;
+  await sb(`codes?service_id=eq.${selectedSvcId}&is_used=eq.true`, { method: 'DELETE', prefer: 'return=minimal' });
+  toast('✓ Sent accounts purged');
+  loadCodes(selectedSvcId);
+}
+
+async function toggleStep(id, current) {
+  await sb(`services?id=eq.${id}`, { method: 'PATCH', body: { is_stepped: !current }, prefer: 'return=minimal' });
+  toast(`✓ Steps ${!current ? 'enabled' : 'disabled'}`);
+  loadServices();
+}
+
+async function updateCd(id, val) {
+  const mins = parseInt(val) || 0;
+  await sb(`services?id=eq.${id}`, { method: 'PATCH', body: { cooldown: mins }, prefer: 'return=minimal' });
+  toast(`✓ Cooldown set to ${mins}m`);
+}
+
+// ══════════════════════════════════════════════════
+//  NEW SERVICE
+// ══════════════════════════════════════════════════
+let steppedOn = false;
+
+function openNewSvc() {
+  steppedOn = false;
+  document.getElementById('ns-stepped').textContent = 'Steps Mode: Off';
+  document.getElementById('ns-stepped').classList.remove('on');
+  document.getElementById('ns-name').value = '';
+  document.getElementById('ns-cd').value = '0';
+  openModal('modal-new');
+}
+
+function toggleStepped() {
+  steppedOn = !steppedOn;
+  const btn = document.getElementById('ns-stepped');
+  btn.textContent = `Steps Mode: ${steppedOn ? 'On' : 'Off'}`;
+  btn.classList.toggle('on', steppedOn);
+}
+
+async function createService() {
+  const name = document.getElementById('ns-name').value.trim().toLowerCase();
+  const tier = document.getElementById('ns-tier').value;
+  const cd   = parseInt(document.getElementById('ns-cd').value) || 0;
+  if (!name) { toast('Enter a name', true); return; }
+
+  try {
+    await sb('services', { method: 'POST', body: { name, tier, cooldown: cd, is_stepped: steppedOn }, prefer: 'return=minimal' });
+    toast(`✓ Service "${name}" created`);
+    closeModal('modal-new');
+    loadServices();
+    loadUploadSvcs();
+    loadInvSvcs();
+  } catch(e) { toast('Failed to create service', true); }
+}
+
+// ══════════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════════
+let delTargetId = null;
+
+function openDel(id, name) {
+  delTargetId = id;
+  document.getElementById('del-sub').textContent = `Delete "${name}" and ALL its accounts? This cannot be undone.`;
+  openModal('modal-del');
+}
+
+async function confirmDel() {
+  if (!delTargetId) return;
+  try {
+    await sb(`codes?service_id=eq.${delTargetId}`, { method: 'DELETE', prefer: 'return=minimal' });
+    await sb(`services?id=eq.${delTargetId}`, { method: 'DELETE', prefer: 'return=minimal' });
+    closeModal('modal-del');
+    toast('✓ Service deleted');
+    selectedSvcId = null;
+    document.getElementById('inv-panel').style.display = 'none';
+    loadServices();
+    loadDashboard();
+    loadUploadSvcs();
+    loadInvSvcs();
+  } catch(e) { toast('Delete failed', true); }
+}
+
+// ══════════════════════════════════════════════════
+//  UPLOAD (page)
+// ══════════════════════════════════════════════════
+let upSplit = 'line', upEntries = [];
+
+function setSplit(mode, el) {
+  upSplit = mode;
+  document.querySelectorAll('#page-upload .split-opt').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('delim-wrap').style.display = mode==='custom'?'block':'none';
+  if (document.getElementById('file-in').files.length) handleFiles();
+}
+
+async function handleFiles() {
+  const files = Array.from(document.getElementById('file-in').files);
+  const contents = await Promise.all(files.map(f => f.text()));
+  upEntries = parseEntries(contents, upSplit, document.getElementById('delim-val').value);
+  const p = document.getElementById('file-preview');
+  p.style.display = 'block';
+  p.textContent = `✓ ${upEntries.length} accounts staged from ${files.length} file(s) [${upSplit}]`;
+}
+
+function parseEntries(contents, mode, delim) {
+  let out = [];
+  contents.forEach(raw => {
+    if (mode==='file') { if(raw.trim()) out.push(raw.trim()); }
+    else if (mode==='line') { raw.split('\n').forEach(l => { if(l.trim()) out.push(l.trim()); }); }
+    else { const d = delim==='\\n\\n'?'\n\n':delim; raw.split(d).forEach(p => { if(p.trim()) out.push(p.trim()); }); }
+  });
+  return out;
+}
+
+async function loadUploadSvcs() {
+  try {
+    const svcs = await sb('services?select=id,name,tier&order=name');
+    const sel = document.getElementById('up-svc');
+    sel.innerHTML = '<option value="">-- select service --</option>' +
+      svcs.map(s => `<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
+  } catch(e) {}
+}
+
+async function doUpload() {
+  const svcId = document.getElementById('up-svc').value;
+  if (!svcId) { toast('Select a service', true); return; }
+
+  let entries = upEntries;
+  if (!entries.length) {
+    const manual = document.getElementById('manual-in').value.trim();
+    if (!manual) { toast('No data to upload', true); return; }
+    entries = manual.split('\n').map(l=>l.trim()).filter(Boolean);
+  }
+  if (!entries.length) { toast('No valid entries', true); return; }
+
+  // Add header/footer wrapper (Cloudiverse style)
+  const tier = document.getElementById('up-svc').selectedOptions[0]?.textContent.match(/\[(\w+)\]/)?.[1];
+  const rows = entries.map(e => {
+    let txt = e;
+    if (tier !== 'hidden') {
+      txt = `-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------`;
+    }
+    return { service_id: parseInt(svcId), code_text: txt, is_used: false };
+  });
+
+  const btn = document.getElementById('up-btn');
+  const wrap = document.getElementById('up-progress');
+  const fill = document.getElementById('up-fill');
+  const lbl  = document.getElementById('up-label');
+
+  btn.disabled = true; btn.textContent = 'Injecting...';
+  wrap.style.display = 'block';
+
+  const chunk = 200; let done = 0;
+  try {
+    for (let i = 0; i < rows.length; i += chunk) {
+      await sb('codes', { method: 'POST', body: rows.slice(i, i+chunk), prefer: 'return=minimal' });
+      done += Math.min(chunk, rows.length - i);
+      const pct = Math.round(done/rows.length*100);
+      fill.style.width = pct + '%';
+      lbl.textContent = `${pct}% Injected — ${done}/${rows.length}`;
+    }
+    toast(`✓ ${rows.length} accounts injected`);
+    upEntries = [];
+    document.getElementById('file-in').value = '';
+    document.getElementById('file-preview').style.display = 'none';
+    document.getElementById('manual-in').value = '';
+    loadDashboard();
+  } catch(e) { toast('Upload failed', true); console.error(e); }
+
+  btn.disabled = false; btn.textContent = '↑ Inject Stock';
+  setTimeout(() => { wrap.style.display='none'; fill.style.width='0%'; }, 2000);
+}
+
+// ══════════════════════════════════════════════════
+//  RESTOCK MODAL (from services page)
+// ══════════════════════════════════════════════════
+let mSplit = 'line', mEntries = [];
+
+function openRestock() {
+  if (!selectedSvcId) { toast('Select a service first', true); return; }
+  const name = document.getElementById('inv-title').textContent.replace(' — Inventory','');
+  document.getElementById('restock-sub').textContent = `Target: ${name}`;
+  mEntries = [];
+  document.getElementById('m-file-in').value = '';
+  document.getElementById('m-file-preview').style.display = 'none';
+  document.getElementById('m-manual').value = '';
+  openModal('modal-restock');
+}
+
+function setSplitM(mode, el) {
+  mSplit = mode;
+  document.querySelectorAll('#modal-restock .split-opt').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mdelim-wrap').style.display = mode==='custom'?'block':'none';
+  if (document.getElementById('m-file-in').files.length) handleMFiles();
+}
+
+async function handleMFiles() {
+  const files = Array.from(document.getElementById('m-file-in').files);
+  const contents = await Promise.all(files.map(f => f.text()));
+  mEntries = parseEntries(contents, mSplit, document.getElementById('mdelim-val').value);
+  const p = document.getElementById('m-file-preview');
+  p.style.display = 'block';
+  p.textContent = `✓ ${mEntries.length} accounts staged from ${files.length} file(s)`;
+}
+
+async function doModalUpload() {
+  if (!selectedSvcId) return;
+
+  let entries = mEntries;
+  if (!entries.length) {
+    const manual = document.getElementById('m-manual').value.trim();
+    if (!manual) { toast('No data', true); return; }
+    entries = manual.split('\n').map(l=>l.trim()).filter(Boolean);
+  }
+
+  const rows = entries.map(e => ({
+    service_id: selectedSvcId,
+    code_text: activeTier !== 'hidden'
+      ? `-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------`
+      : e,
+    is_used: false
+  }));
+
+  const btn = document.getElementById('m-inject-btn');
+  const wrap = document.getElementById('m-progress');
+  const fill = document.getElementById('m-fill');
+  const lbl  = document.getElementById('m-label');
+
+  btn.disabled = true; btn.textContent = 'Injecting...';
+  wrap.style.display = 'block';
+
+  const chunk = 200; let done = 0;
+  try {
+    for (let i = 0; i < rows.length; i += chunk) {
+      await sb('codes', { method: 'POST', body: rows.slice(i, i+chunk), prefer: 'return=minimal' });
+      done += Math.min(chunk, rows.length-i);
+      const pct = Math.round(done/rows.length*100);
+      fill.style.width = pct+'%';
+      lbl.textContent = `${pct}% Injected — ${done}/${rows.length}`;
+    }
+    toast(`✓ ${rows.length} accounts injected`);
+    closeModal('modal-restock');
+    mEntries = [];
+    loadCodes(selectedSvcId);
+    loadDashboard();
+  } catch(e) { toast('Upload failed', true); console.error(e); }
+
+  btn.disabled = false; btn.textContent = '↑ Inject';
+  setTimeout(() => { wrap.style.display='none'; fill.style.width='0%'; }, 2000);
+}
+
+// ══════════════════════════════════════════════════
+//  INVENTORY PAGE
+// ══════════════════════════════════════════════════
+async function loadInvSvcs() {
+  try {
+    const svcs = await sb('services?select=id,name,tier&order=name');
+    const sel = document.getElementById('inv-sel');
+    sel.innerHTML = '<option value="">-- select service --</option>' +
+      svcs.map(s => `<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
+  } catch(e) {}
+}
+
+async function loadInv() {
+  const id = document.getElementById('inv-sel').value;
+  const list = document.getElementById('inv-list');
+  const purge = document.getElementById('purge-inv-btn');
+
+  if (!id) { list.innerHTML = '<div class="empty-state">Select a service</div>'; purge.disabled = true; return; }
+  purge.disabled = false;
+
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
+
+  try {
+    const total = await sbCount(`codes?service_id=eq.${id}`);
+    const avail = await sbCount(`codes?service_id=eq.${id}&is_used=eq.false`);
+    document.getElementById('inv-stat').textContent = `${avail} available · ${total-avail} sent · ${total} total (showing up to 300)`;
+
+    const codes = await sb(`codes?service_id=eq.${id}&order=is_used.asc,created_at.desc&limit=300`);
+
+    if (!codes || !codes.length) { list.innerHTML = '<div class="empty-state">No accounts</div>'; return; }
+
+    list.innerHTML = codes.map(c => `
+      <div class="code-row">
+        <pre class="code-text">${escHtml(c.code_text)}</pre>
+        <span class="code-badge ${c.is_used?'cb-used':'cb-avail'}">${c.is_used?'Sent':'Avail'}</span>
+        <button class="btn btn-danger btn-sm" onclick="delCodeInv(${c.id})">✕</button>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load</div>'; }
+}
+
+async function delCodeInv(id) {
+  if (!confirm('Delete this account?')) return;
+  await sb(`codes?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+  toast('✓ Deleted');
+  loadInv();
+}
+
+async function purgeUsedInv() {
+  const id = document.getElementById('inv-sel').value;
+  if (!id || !confirm('Delete all SENT accounts?')) return;
+  await sb(`codes?service_id=eq.${id}&is_used=eq.true`, { method: 'DELETE', prefer: 'return=minimal' });
+  toast('✓ Sent accounts purged');
+  loadInv();
+  loadDashboard();
+}
+
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// close modals on backdrop click
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+let toastT;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = isErr ? 'err show' : 'show';
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.className = el.className.replace(' show','').replace('show',''), 3000);
+}
+</script>
+</body>
+</html>
