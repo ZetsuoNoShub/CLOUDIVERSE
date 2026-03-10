@@ -331,6 +331,9 @@ input:focus, textarea:focus, select:focus {
 .code-badge { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 8px; flex-shrink: 0; margin-top: 2px; border: 1px solid; clip-path: polygon(0 0, calc(100% - 3px) 0, 100% 3px, 100% 100%, 3px 100%, 0 calc(100% - 3px)); }
 .cb-avail { color: var(--green); border-color: rgba(16,185,129,.3); }
 .cb-used  { color: var(--muted); border-color: var(--border2); }
+.cb-claimed { color: var(--cyan); border-color: rgba(34,211,238,.3); }
+.cb-expired { color: var(--red); border-color: rgba(244,63,94,.3); }
+.cb-pending { color: var(--yellow); border-color: rgba(245,158,11,.3); }
 .overlay { position: fixed; inset: 0; background: rgba(4,3,12,.85); backdrop-filter: blur(20px); z-index: 100; display: none; align-items: center; justify-content: center; }
 .overlay.open { display: flex; animation: fadein .15s ease; }
 @keyframes fadein { from { opacity:0; } to { opacity:1; } }
@@ -388,6 +391,7 @@ select option { background: #0a091a; color: var(--text); }
       <button class="nav-tab" onclick="showPage('services',this)">Services</button>
       <button class="nav-tab" onclick="showPage('upload',this)">Stock</button>
       <button class="nav-tab" onclick="showPage('inventory',this)">Inventory</button>
+      <button class="nav-tab" onclick="showPage('claims',this)">Claims</button>
     </nav>
     <div class="header-right">
       <span class="header-time" id="htime"></span>
@@ -444,12 +448,10 @@ select option { background: #0a091a; color: var(--text); }
           </div>
           <table class="data-table">
             <thead>
-              <tr>
-                <th>Service</th><th>Tier</th><th>Available</th><th>Status</th>
-              </tr>
+              <tr><th>Service</th><th>Tier</th><th>Cooldown</th><th>Available</th><th>Status</th></tr>
             </thead>
             <tbody id="dash-body">
-              <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+              <tr><td colspan="5" class="empty-state">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -560,6 +562,52 @@ select option { background: #0a091a; color: var(--text); }
         </div>
       </div>
 
+      <!-- CLAIMS -->
+      <div class="page" id="page-claims">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">AdSense Gate</div>
+            <div class="page-title">Pending Claims</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline btn-sm" onclick="loadClaims()">↻ Refresh</button>
+            <button class="btn btn-danger btn-sm" onclick="purgeExpiredClaims()">Purge Expired</button>
+            <button class="btn btn-danger btn-sm" onclick="purgeAllClaims()">Purge All</button>
+          </div>
+        </div>
+        <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-cell" data-index="01">
+            <div class="stat-label">Total Claims</div>
+            <div class="stat-val" id="cl-total">—</div>
+            <div class="stat-sub">All time</div>
+          </div>
+          <div class="stat-cell" data-index="02">
+            <div class="stat-label">Pending</div>
+            <div class="stat-val" id="cl-pending">—</div>
+            <div class="stat-sub">Unclaimed active</div>
+          </div>
+          <div class="stat-cell" data-index="03">
+            <div class="stat-label">Claimed</div>
+            <div class="stat-val" id="cl-claimed">—</div>
+            <div class="stat-sub">Successfully revealed</div>
+          </div>
+          <div class="stat-cell" data-index="04">
+            <div class="stat-label">Expired</div>
+            <div class="stat-val" id="cl-expired">—</div>
+            <div class="stat-sub">Timed out</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Recent Claims</div>
+            <span style="font-size:9px;color:var(--muted);letter-spacing:2px">Last 100</span>
+          </div>
+          <div class="codes-list" style="max-height:600px" id="claims-list">
+            <div class="empty-state">Loading...</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -571,7 +619,7 @@ select option { background: #0a091a; color: var(--text); }
     <div class="modal-sub">Initialize a new inventory module</div>
     <div class="form-group">
       <label class="field-label">Service Name</label>
-      <input type="text" id="ns-name" placeholder="e.g. netflix">
+      <input type="text" id="ns-name" placeholder="e.g. netflix-free">
     </div>
     <div class="form-grid">
       <div class="form-group">
@@ -644,7 +692,7 @@ select option { background: #0a091a; color: var(--text); }
   </div>
 </div>
 
-<!-- RENAME SERVICE -->
+<!-- RENAME -->
 <div class="overlay" id="modal-rename">
   <div class="modal" style="max-width:440px">
     <div class="modal-title">Rename Service</div>
@@ -663,24 +711,23 @@ select option { background: #0a091a; color: var(--text); }
 <div id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://sqqnskpxxjylsxpazsuk.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcW5za3B4eGp5bHN4cGF6c3VrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODg0NTIsImV4cCI6MjA4NzA2NDQ1Mn0.TQudtoQgsW_9FYXPuTFWpO6AnZpdQimzr6kAyVFzrFA';
-const ADMIN_PASS  = '_CLOUDIVERSE_';
-
-// Tier suffix stripping — mirrors bot logic
-const TIER_SUFFIXES = ['-free', '-booster', '-bst', '-premium', '-prem', '-god'];
-function getBaseName(name) {
-  const lower = name.toLowerCase();
-  for (const suffix of TIER_SUFFIXES) {
-    if (lower.endsWith(suffix)) return name.slice(0, name.length - suffix.length).toUpperCase();
-  }
-  return name.toUpperCase();
-}
+// ── CONFIG ─────────────────────────────────────────────
+const SUPABASE_URL  = 'https://sqqnskpxxjylsxpazsuk.supabase.co';
+// Service role key used here since admin panel is password-protected
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcW5za3B4eGp5bHN4cGF6c3VrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ4ODQ1MiwiZXhwIjoyMDg3MDY0NDUyfQ.Twyzlpj-KOZNOGe1GA0aeVL7K3RE7XRER9bihKbx3lw';
+const ADMIN_PASS    = '_CLOUDIVERSE_';
+// ───────────────────────────────────────────────────────
 
 async function sb(path, opts={}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': opts.prefer||'return=representation', ...opts.headers },
-    method: opts.method||'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
     body: opts.body ? JSON.stringify(opts.body) : undefined
   });
   if (!res.ok) throw new Error(await res.text());
@@ -690,16 +737,22 @@ async function sb(path, opts={}) {
 
 async function sbCount(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' }
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0'
+    }
   });
   const cr = res.headers.get('content-range');
-  return cr ? (parseInt(cr.match(/\/(\d+)/)?.[1])||0) : 0;
+  return cr ? (parseInt(cr.match(/\/(\d+)/)?.[1]) || 0) : 0;
 }
 
+// ── AUTH ────────────────────────────────────────────────
 document.getElementById('pw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-
 function doLogin() {
-  if(document.getElementById('pw').value === ADMIN_PASS) {
+  if (document.getElementById('pw').value === ADMIN_PASS) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     initApp();
@@ -707,79 +760,97 @@ function doLogin() {
     const el = document.getElementById('login-err');
     el.textContent = 'Access denied — incorrect key';
     document.getElementById('pw').value = '';
-    setTimeout(() => el.textContent='', 3000);
+    setTimeout(() => el.textContent = '', 3000);
   }
 }
 function doLogout() {
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('pw').value='';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw').value = '';
 }
 
+// ── INIT ────────────────────────────────────────────────
 let activeTier = 'free';
-function initApp() { updateClock(); setInterval(updateClock,1000); loadDashboard(); loadUploadSvcs(); loadInvSvcs(); }
-function updateClock() { document.getElementById('htime').textContent = new Date().toUTCString().replace('GMT','UTC'); }
+function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadDashboard();
+  loadUploadSvcs();
+  loadInvSvcs();
+}
+function updateClock() {
+  document.getElementById('htime').textContent = new Date().toUTCString().replace('GMT','UTC');
+}
 
+// ── NAVIGATION ──────────────────────────────────────────
 function showPage(name, el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`page-${name}`).classList.add('active');
   el.classList.add('active');
-  if(name==='dashboard') loadDashboard();
-  if(name==='services') loadServices();
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'services')  loadServices();
+  if (name === 'claims')    loadClaims();
 }
 
 function setTier(tier, el) {
   activeTier = tier;
-  document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('svc-eyebrow').textContent = tier.charAt(0).toUpperCase()+tier.slice(1)+' Tier';
+  document.getElementById('svc-eyebrow').textContent = tier.charAt(0).toUpperCase() + tier.slice(1) + ' Tier';
   selectedSvcId = null;
-  document.getElementById('inv-panel').style.display='none';
+  document.getElementById('inv-panel').style.display = 'none';
   loadServices();
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector('[onclick="showPage(\'services\',this)"]').classList.add('active');
   document.getElementById('page-services').classList.add('active');
 }
 
+// ── DASHBOARD ───────────────────────────────────────────
 async function loadDashboard() {
   try {
-    const allSvcs = await sb('services?select=id&order=id');
+    const allSvcs = await sb('services?select=id');
     document.getElementById('s-total').textContent = allSvcs.length;
-    const svcs = await sb('services?select=id,name,tier&tier=not.in.(send,hidden)&order=name');
-    let totalA=0, totalU=0;
+    const svcs = await sb('services?select=id,name,tier,cooldown&tier=not.in.(send,hidden)&order=name');
+    let totalA = 0, totalU = 0;
     const rows = await Promise.all(svcs.map(async s => {
       const a = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.false`);
       const u = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.true`);
-      totalA+=a; totalU+=u;
-      const cls = a===0?'sb-red':a<5?'sb-yellow':'sb-green';
-      const lbl = a===0?'Out of Stock':a<5?'Low Stock':'In Stock';
+      totalA += a; totalU += u;
+      const cls = a === 0 ? 'sb-red' : a < 5 ? 'sb-yellow' : 'sb-green';
+      const lbl = a === 0 ? 'Out of Stock' : a < 5 ? 'Low Stock' : 'In Stock';
+      const cd  = s.cooldown ? `${s.cooldown}m` : '—';
       return `<tr>
         <td style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;font-weight:700">${s.name}</td>
         <td><span class="tier-pill tp-${s.tier}">${s.tier}</span></td>
+        <td style="color:var(--muted)">${cd}</td>
         <td style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700">${a}</td>
         <td><span class="stock-badge ${cls}">${lbl}</span></td>
       </tr>`;
     }));
     document.getElementById('s-avail').textContent = totalA;
     document.getElementById('s-used').textContent  = totalU;
-    document.getElementById('dash-body').innerHTML = rows.join('') ||
-      `<tr><td colspan="4" class="empty-state">No services found</td></tr>`;
+    document.getElementById('dash-body').innerHTML  = rows.join('') ||
+      `<tr><td colspan="5" class="empty-state">No services found</td></tr>`;
   } catch(e) { toast('Failed to load dashboard', true); }
 }
 
+// ── SERVICES ────────────────────────────────────────────
 let selectedSvcId = null;
 
 async function loadServices() {
   try {
     const svcs = await sb(`services?select=id,name,tier,cooldown,is_stepped&tier=eq.${activeTier}&order=name`);
     const grid = document.getElementById('svc-grid');
-    if(!svcs||svcs.length===0) { grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1">No services in ${activeTier} tier</div>`; return; }
+    if (!svcs || svcs.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">No services in ${activeTier} tier</div>`;
+      return;
+    }
     const cards = await Promise.all(svcs.map(async s => {
-      const a = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.false`);
-      const cls = a===0?'sb-red':a<5?'sb-yellow':'sb-green';
-      const sel = selectedSvcId===s.id?'selected':'';
+      const a   = await sbCount(`codes?service_id=eq.${s.id}&is_used=eq.false`);
+      const cls = a === 0 ? 'sb-red' : a < 5 ? 'sb-yellow' : 'sb-green';
+      const sel = selectedSvcId === s.id ? 'selected' : '';
       return `<div class="svc-card ${sel}" onclick="selectSvc(${s.id},'${s.name}')">
         <div class="svc-name">${s.name}</div>
         <div class="svc-meta">
@@ -791,7 +862,7 @@ async function loadServices() {
           <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();toggleStep(${s.id},${s.is_stepped})">Steps: ${s.is_stepped?'ON':'OFF'}</button>
           <input type="number" class="svc-cd-input" value="${s.cooldown||0}" min="0" title="Cooldown mins" onclick="event.stopPropagation()" onchange="updateCd(${s.id},this.value)">
           <span style="font-size:10px;color:var(--muted)">min</span>
-          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openRename(${s.id},'${s.name}')" title="Rename">✎ Rename</button>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openRename(${s.id},'${s.name}')" title="Rename">✎</button>
           <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="event.stopPropagation();openDel(${s.id},'${s.name}')">✕</button>
         </div>
       </div>`;
@@ -802,10 +873,10 @@ async function loadServices() {
 
 async function selectSvc(id, name) {
   selectedSvcId = id;
-  document.getElementById('inv-panel').style.display='block';
-  document.getElementById('inv-title').textContent=`${name.toUpperCase()} — Inventory`;
+  document.getElementById('inv-panel').style.display = 'block';
+  document.getElementById('inv-title').textContent = `${name.toUpperCase()} — Inventory`;
   await loadCodes(id);
-  document.querySelectorAll('.svc-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.svc-card').forEach(c => c.classList.remove('selected'));
   event.currentTarget.classList.add('selected');
 }
 
@@ -817,16 +888,16 @@ async function loadCodes(svcId) {
     const avail = await sbCount(`codes?service_id=eq.${svcId}&is_used=eq.false`);
     document.getElementById('inv-counts').textContent = `${avail} available · ${total-avail} sent · ${total} total`;
     const codes = await sb(`codes?service_id=eq.${svcId}&order=is_used.asc,created_at.desc&limit=300`);
-    if(!codes||codes.length===0) { list.innerHTML='<div class="empty-state">No accounts — restock this service</div>'; return; }
-    list.innerHTML = codes.map(c=>`
+    if (!codes || codes.length === 0) { list.innerHTML = '<div class="empty-state">No accounts — restock this service</div>'; return; }
+    list.innerHTML = codes.map(c => `
       <div class="code-row" id="cr-${c.id}">
         <pre class="code-text">${escHtml(c.code_text)}</pre>
         <span class="code-badge ${c.is_used?'cb-used':'cb-avail'}">${c.is_used?'Sent':'Avail'}</span>
-        ${c.is_used?`<button class="btn btn-cyan btn-sm" onclick="reuseCode(${c.id},${svcId})" title="Mark available again">↺ Reuse</button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="editCode(${c.id},${svcId})" title="Edit">✎</button>
-        <button class="btn btn-danger btn-sm" onclick="delCode(${c.id},${svcId})" title="Delete">✕</button>
+        ${c.is_used ? `<button class="btn btn-cyan btn-sm" onclick="reuseCode(${c.id},${svcId})">↺ Reuse</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="editCode(${c.id},${svcId})">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="delCode(${c.id},${svcId})">✕</button>
       </div>`).join('');
-  } catch(e) { list.innerHTML='<div class="empty-state">Failed to load</div>'; }
+  } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load</div>'; }
 }
 
 async function reuseCode(id, svcId) {
@@ -838,11 +909,11 @@ async function reuseCode(id, svcId) {
 }
 
 async function editCode(id, svcId) {
-  const codes = await sb(`codes?id=eq.${id}&select=id,code_text,is_used`);
-  if(!codes||!codes[0]) return;
+  const codes = await sb(`codes?id=eq.${id}&select=id,code_text`);
+  if (!codes || !codes[0]) return;
   const row = document.getElementById(`cr-${id}`);
-  if(!row) return;
-  row.innerHTML=`<div style="flex:1">
+  if (!row) return;
+  row.innerHTML = `<div style="flex:1">
     <textarea class="edit-area" id="ea-${id}">${escHtml(codes[0].code_text)}</textarea>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn btn-gold btn-sm" onclick="saveCode(${id},${svcId})">Save</button>
@@ -853,22 +924,22 @@ async function editCode(id, svcId) {
 
 async function saveCode(id, svcId) {
   const val = document.getElementById(`ea-${id}`)?.value;
-  if(!val) return;
+  if (!val) return;
   await sb(`codes?id=eq.${id}`, { method:'PATCH', body:{ code_text:val }, prefer:'return=minimal' });
   toast('✓ Code updated');
   loadCodes(svcId);
 }
 
 async function delCode(id, svcId) {
-  if(!confirm('Delete this account?')) return;
+  if (!confirm('Delete this account?')) return;
   await sb(`codes?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
   toast('✓ Deleted');
   loadCodes(svcId);
 }
 
 async function purgeUsed() {
-  if(!selectedSvcId) return;
-  if(!confirm('Delete all SENT accounts for this service?')) return;
+  if (!selectedSvcId) return;
+  if (!confirm('Delete all SENT accounts for this service?')) return;
   await sb(`codes?service_id=eq.${selectedSvcId}&is_used=eq.true`, { method:'DELETE', prefer:'return=minimal' });
   toast('✓ Sent accounts purged');
   loadCodes(selectedSvcId);
@@ -881,53 +952,53 @@ async function toggleStep(id, current) {
 }
 
 async function updateCd(id, val) {
-  const mins = parseInt(val)||0;
+  const mins = parseInt(val) || 0;
   await sb(`services?id=eq.${id}`, { method:'PATCH', body:{ cooldown:mins }, prefer:'return=minimal' });
   toast(`✓ Cooldown set to ${mins}m`);
 }
 
+// ── RENAME ──────────────────────────────────────────────
 let renameTargetId = null;
-
 function openRename(id, currentName) {
   renameTargetId = id;
   document.getElementById('rename-sub').textContent = `Renaming: ${currentName}`;
   document.getElementById('rename-val').value = currentName;
   openModal('modal-rename');
 }
-
 async function confirmRename() {
   const newName = document.getElementById('rename-val').value.trim().toLowerCase();
-  if(!newName) { toast('Enter a name', true); return; }
-  if(!renameTargetId) return;
+  if (!newName) { toast('Enter a name', true); return; }
+  if (!renameTargetId) return;
   try {
     await sb(`services?id=eq.${renameTargetId}`, { method:'PATCH', body:{ name:newName }, prefer:'return=minimal' });
     toast(`✓ Renamed to "${newName}"`);
     closeModal('modal-rename');
-    if(selectedSvcId===renameTargetId) document.getElementById('inv-title').textContent=`${newName.toUpperCase()} — Inventory`;
+    if (selectedSvcId === renameTargetId) document.getElementById('inv-title').textContent = `${newName.toUpperCase()} — Inventory`;
     loadServices(); loadDashboard(); loadUploadSvcs(); loadInvSvcs();
   } catch(e) { toast('Rename failed', true); }
 }
 
+// ── NEW SERVICE ─────────────────────────────────────────
 let steppedOn = false;
 function openNewSvc() {
   steppedOn = false;
-  document.getElementById('ns-stepped').textContent='Steps Mode: Off';
+  document.getElementById('ns-stepped').textContent = 'Steps Mode: Off';
   document.getElementById('ns-stepped').classList.remove('on');
-  document.getElementById('ns-name').value='';
-  document.getElementById('ns-cd').value='0';
+  document.getElementById('ns-name').value = '';
+  document.getElementById('ns-cd').value = '0';
   openModal('modal-new');
 }
 function toggleStepped() {
   steppedOn = !steppedOn;
   const btn = document.getElementById('ns-stepped');
-  btn.textContent=`Steps Mode: ${steppedOn?'On':'Off'}`;
+  btn.textContent = `Steps Mode: ${steppedOn?'On':'Off'}`;
   btn.classList.toggle('on', steppedOn);
 }
 async function createService() {
   const name = document.getElementById('ns-name').value.trim().toLowerCase();
   const tier = document.getElementById('ns-tier').value;
-  const cd   = parseInt(document.getElementById('ns-cd').value)||0;
-  if(!name) { toast('Enter a name', true); return; }
+  const cd   = parseInt(document.getElementById('ns-cd').value) || 0;
+  if (!name) { toast('Enter a name', true); return; }
   try {
     await sb('services', { method:'POST', body:{ name, tier, cooldown:cd, is_stepped:steppedOn }, prefer:'return=minimal' });
     toast(`✓ Service "${name}" created`);
@@ -936,175 +1007,290 @@ async function createService() {
   } catch(e) { toast('Failed to create service', true); }
 }
 
+// ── DELETE SERVICE ──────────────────────────────────────
 let delTargetId = null;
 function openDel(id, name) {
   delTargetId = id;
-  document.getElementById('del-sub').textContent=`Delete "${name}" and ALL its accounts? This cannot be undone.`;
+  document.getElementById('del-sub').textContent = `Delete "${name}" and ALL its accounts? This cannot be undone.`;
   openModal('modal-del');
 }
 async function confirmDel() {
-  if(!delTargetId) return;
+  if (!delTargetId) return;
   try {
     await sb(`codes?service_id=eq.${delTargetId}`, { method:'DELETE', prefer:'return=minimal' });
     await sb(`services?id=eq.${delTargetId}`, { method:'DELETE', prefer:'return=minimal' });
     closeModal('modal-del');
     toast('✓ Service deleted');
     selectedSvcId = null;
-    document.getElementById('inv-panel').style.display='none';
+    document.getElementById('inv-panel').style.display = 'none';
     loadServices(); loadDashboard(); loadUploadSvcs(); loadInvSvcs();
   } catch(e) { toast('Delete failed', true); }
 }
 
-let upSplit='line', upEntries=[];
-function setSplit(mode,el) {
-  upSplit=mode;
-  document.querySelectorAll('#page-upload .split-opt').forEach(b=>b.classList.remove('active'));
+// ── UPLOAD ──────────────────────────────────────────────
+let upSplit = 'line', upEntries = [];
+function setSplit(mode, el) {
+  upSplit = mode;
+  document.querySelectorAll('#page-upload .split-opt').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('delim-wrap').style.display=mode==='custom'?'block':'none';
-  if(document.getElementById('file-in').files.length) handleFiles();
+  document.getElementById('delim-wrap').style.display = mode === 'custom' ? 'block' : 'none';
+  if (document.getElementById('file-in').files.length) handleFiles();
 }
 async function handleFiles() {
-  const files=Array.from(document.getElementById('file-in').files);
-  const contents=await Promise.all(files.map(f=>f.text()));
-  upEntries=parseEntries(contents,upSplit,document.getElementById('delim-val').value);
-  const p=document.getElementById('file-preview');
-  p.style.display='block';
-  p.textContent=`✓ ${upEntries.length} accounts staged from ${files.length} file(s) [${upSplit}]`;
+  const files = Array.from(document.getElementById('file-in').files);
+  const contents = await Promise.all(files.map(f => f.text()));
+  upEntries = parseEntries(contents, upSplit, document.getElementById('delim-val').value);
+  const p = document.getElementById('file-preview');
+  p.style.display = 'block';
+  p.textContent = `✓ ${upEntries.length} accounts staged from ${files.length} file(s) [${upSplit}]`;
 }
-function parseEntries(contents,mode,delim) {
-  let out=[];
-  contents.forEach(raw=>{
-    if(mode==='file'){if(raw.trim())out.push(raw.trim());}
-    else if(mode==='line'){raw.split('\n').forEach(l=>{if(l.trim())out.push(l.trim());});}
-    else{const d=delim==='\\n\\n'?'\n\n':delim;raw.split(d).forEach(p=>{if(p.trim())out.push(p.trim());});}
+function parseEntries(contents, mode, delim) {
+  let out = [];
+  contents.forEach(raw => {
+    if (mode === 'file') { if (raw.trim()) out.push(raw.trim()); }
+    else if (mode === 'line') { raw.split('\n').forEach(l => { if (l.trim()) out.push(l.trim()); }); }
+    else { const d = delim === '\\n\\n' ? '\n\n' : delim; raw.split(d).forEach(p => { if (p.trim()) out.push(p.trim()); }); }
   });
   return out;
 }
 async function loadUploadSvcs() {
   try {
-    const svcs=await sb('services?select=id,name,tier&order=name');
-    const sel=document.getElementById('up-svc');
-    sel.innerHTML='<option value="">-- select service --</option>'+svcs.map(s=>`<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
-  } catch(e){}
+    const svcs = await sb('services?select=id,name,tier&order=name');
+    const sel = document.getElementById('up-svc');
+    sel.innerHTML = '<option value="">-- select service --</option>' +
+      svcs.map(s => `<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
+  } catch(e) {}
 }
 async function doUpload() {
-  const svcId=document.getElementById('up-svc').value;
-  if(!svcId){toast('Select a service',true);return;}
-  let entries=upEntries;
-  if(!entries.length){const manual=document.getElementById('manual-in').value.trim();if(!manual){toast('No data to upload',true);return;}entries=manual.split('\n').map(l=>l.trim()).filter(Boolean);}
-  if(!entries.length){toast('No valid entries',true);return;}
-  const tier=document.getElementById('up-svc').selectedOptions[0]?.textContent.match(/\[(\w+)\]/)?.[1];
-  const rows=entries.map(e=>({service_id:parseInt(svcId),code_text:tier!=='hidden'?`-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------`:e,is_used:false}));
-  const btn=document.getElementById('up-btn'),wrap=document.getElementById('up-progress'),fill=document.getElementById('up-fill'),lbl=document.getElementById('up-label');
-  btn.disabled=true;btn.textContent='Injecting...';wrap.style.display='block';
-  const chunk=200;let done=0;
+  const svcId = document.getElementById('up-svc').value;
+  if (!svcId) { toast('Select a service', true); return; }
+  let entries = upEntries;
+  if (!entries.length) {
+    const manual = document.getElementById('manual-in').value.trim();
+    if (!manual) { toast('No data to upload', true); return; }
+    entries = manual.split('\n').map(l => l.trim()).filter(Boolean);
+  }
+  if (!entries.length) { toast('No valid entries', true); return; }
+  const tierText = document.getElementById('up-svc').selectedOptions[0]?.textContent.match(/\[(\w+)\]/)?.[1];
+  const rows = entries.map(e => ({
+    service_id: parseInt(svcId),
+    code_text:  tierText !== 'hidden' ? `-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------` : e,
+    is_used:    false
+  }));
+  const btn = document.getElementById('up-btn'), wrap = document.getElementById('up-progress');
+  const fill = document.getElementById('up-fill'), lbl = document.getElementById('up-label');
+  btn.disabled = true; btn.textContent = 'Injecting...'; wrap.style.display = 'block';
+  const chunk = 200; let done = 0;
   try {
-    for(let i=0;i<rows.length;i+=chunk){await sb('codes',{method:'POST',body:rows.slice(i,i+chunk),prefer:'return=minimal'});done+=Math.min(chunk,rows.length-i);const pct=Math.round(done/rows.length*100);fill.style.width=pct+'%';lbl.textContent=`${pct}% Injected — ${done}/${rows.length}`;}
-    toast(`✓ ${rows.length} accounts injected`);upEntries=[];document.getElementById('file-in').value='';document.getElementById('file-preview').style.display='none';document.getElementById('manual-in').value='';loadDashboard();
-  } catch(e){toast('Upload failed',true);}
-  btn.disabled=false;btn.textContent='↑ Inject Stock';
-  setTimeout(()=>{wrap.style.display='none';fill.style.width='0%';},2000);
+    for (let i = 0; i < rows.length; i += chunk) {
+      await sb('codes', { method:'POST', body:rows.slice(i, i+chunk), prefer:'return=minimal' });
+      done += Math.min(chunk, rows.length - i);
+      const pct = Math.round(done / rows.length * 100);
+      fill.style.width = pct + '%';
+      lbl.textContent = `${pct}% Injected — ${done}/${rows.length}`;
+    }
+    toast(`✓ ${rows.length} accounts injected`);
+    upEntries = [];
+    document.getElementById('file-in').value = '';
+    document.getElementById('file-preview').style.display = 'none';
+    document.getElementById('manual-in').value = '';
+    loadDashboard();
+  } catch(e) { toast('Upload failed', true); }
+  btn.disabled = false; btn.textContent = '↑ Inject Stock';
+  setTimeout(() => { wrap.style.display = 'none'; fill.style.width = '0%'; }, 2000);
 }
 
-let mSplit='line',mEntries=[];
+// ── MODAL RESTOCK ───────────────────────────────────────
+let mSplit = 'line', mEntries = [];
 function openRestock() {
-  if(!selectedSvcId){toast('Select a service first',true);return;}
-  const name=document.getElementById('inv-title').textContent.replace(' — Inventory','');
-  document.getElementById('restock-sub').textContent=`Target: ${name}`;
-  mEntries=[];document.getElementById('m-file-in').value='';document.getElementById('m-file-preview').style.display='none';document.getElementById('m-manual').value='';
+  if (!selectedSvcId) { toast('Select a service first', true); return; }
+  const name = document.getElementById('inv-title').textContent.replace(' — Inventory','');
+  document.getElementById('restock-sub').textContent = `Target: ${name}`;
+  mEntries = [];
+  document.getElementById('m-file-in').value = '';
+  document.getElementById('m-file-preview').style.display = 'none';
+  document.getElementById('m-manual').value = '';
   openModal('modal-restock');
 }
-function setSplitM(mode,el) {
-  mSplit=mode;
-  document.querySelectorAll('#modal-restock .split-opt').forEach(b=>b.classList.remove('active'));
+function setSplitM(mode, el) {
+  mSplit = mode;
+  document.querySelectorAll('#modal-restock .split-opt').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('mdelim-wrap').style.display=mode==='custom'?'block':'none';
-  if(document.getElementById('m-file-in').files.length) handleMFiles();
+  document.getElementById('mdelim-wrap').style.display = mode === 'custom' ? 'block' : 'none';
+  if (document.getElementById('m-file-in').files.length) handleMFiles();
 }
 async function handleMFiles() {
-  const files=Array.from(document.getElementById('m-file-in').files);
-  const contents=await Promise.all(files.map(f=>f.text()));
-  mEntries=parseEntries(contents,mSplit,document.getElementById('mdelim-val').value);
-  const p=document.getElementById('m-file-preview');p.style.display='block';p.textContent=`✓ ${mEntries.length} accounts staged from ${files.length} file(s)`;
+  const files = Array.from(document.getElementById('m-file-in').files);
+  const contents = await Promise.all(files.map(f => f.text()));
+  mEntries = parseEntries(contents, mSplit, document.getElementById('mdelim-val').value);
+  const p = document.getElementById('m-file-preview');
+  p.style.display = 'block';
+  p.textContent = `✓ ${mEntries.length} accounts staged from ${files.length} file(s)`;
 }
 async function doModalUpload() {
-  if(!selectedSvcId) return;
-  let entries=mEntries;
-  if(!entries.length){const manual=document.getElementById('m-manual').value.trim();if(!manual){toast('No data',true);return;}entries=manual.split('\n').map(l=>l.trim()).filter(Boolean);}
-  const rows=entries.map(e=>({service_id:selectedSvcId,code_text:activeTier!=='hidden'?`-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------`:e,is_used:false}));
-  const btn=document.getElementById('m-inject-btn'),wrap=document.getElementById('m-progress'),fill=document.getElementById('m-fill'),lbl=document.getElementById('m-label');
-  btn.disabled=true;btn.textContent='Injecting...';wrap.style.display='block';
-  const chunk=200;let done=0;
+  if (!selectedSvcId) return;
+  let entries = mEntries;
+  if (!entries.length) {
+    const manual = document.getElementById('m-manual').value.trim();
+    if (!manual) { toast('No data', true); return; }
+    entries = manual.split('\n').map(l => l.trim()).filter(Boolean);
+  }
+  const rows = entries.map(e => ({
+    service_id: selectedSvcId,
+    code_text:  activeTier !== 'hidden' ? `-------------CLOUDIVERSE-------------\n${e}\n-------------------------------------` : e,
+    is_used:    false
+  }));
+  const btn = document.getElementById('m-inject-btn'), wrap = document.getElementById('m-progress');
+  const fill = document.getElementById('m-fill'), lbl = document.getElementById('m-label');
+  btn.disabled = true; btn.textContent = 'Injecting...'; wrap.style.display = 'block';
+  const chunk = 200; let done = 0;
   try {
-    for(let i=0;i<rows.length;i+=chunk){await sb('codes',{method:'POST',body:rows.slice(i,i+chunk),prefer:'return=minimal'});done+=Math.min(chunk,rows.length-i);const pct=Math.round(done/rows.length*100);fill.style.width=pct+'%';lbl.textContent=`${pct}% Injected — ${done}/${rows.length}`;}
-    toast(`✓ ${rows.length} accounts injected`);closeModal('modal-restock');mEntries=[];loadCodes(selectedSvcId);loadDashboard();
-  } catch(e){toast('Upload failed',true);}
-  btn.disabled=false;btn.textContent='↑ Inject';
-  setTimeout(()=>{wrap.style.display='none';fill.style.width='0%';},2000);
+    for (let i = 0; i < rows.length; i += chunk) {
+      await sb('codes', { method:'POST', body:rows.slice(i, i+chunk), prefer:'return=minimal' });
+      done += Math.min(chunk, rows.length - i);
+      const pct = Math.round(done / rows.length * 100);
+      fill.style.width = pct + '%';
+      lbl.textContent = `${pct}% Injected — ${done}/${rows.length}`;
+    }
+    toast(`✓ ${rows.length} accounts injected`);
+    closeModal('modal-restock');
+    mEntries = [];
+    loadCodes(selectedSvcId);
+    loadDashboard();
+  } catch(e) { toast('Upload failed', true); }
+  btn.disabled = false; btn.textContent = '↑ Inject';
+  setTimeout(() => { wrap.style.display = 'none'; fill.style.width = '0%'; }, 2000);
 }
 
+// ── INVENTORY PAGE ──────────────────────────────────────
 async function loadInvSvcs() {
   try {
-    const svcs=await sb('services?select=id,name,tier&order=name');
-    const sel=document.getElementById('inv-sel');
-    sel.innerHTML='<option value="">-- select service --</option>'+svcs.map(s=>`<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
-  } catch(e){}
+    const svcs = await sb('services?select=id,name,tier&order=name');
+    const sel = document.getElementById('inv-sel');
+    sel.innerHTML = '<option value="">-- select service --</option>' +
+      svcs.map(s => `<option value="${s.id}">${s.name.toUpperCase()} [${s.tier}]</option>`).join('');
+  } catch(e) {}
 }
 async function loadInv() {
-  const id=document.getElementById('inv-sel').value;
-  const list=document.getElementById('inv-list');
-  const purge=document.getElementById('purge-inv-btn');
-  if(!id){list.innerHTML='<div class="empty-state">Select a service</div>';purge.disabled=true;return;}
-  purge.disabled=false;
-  list.innerHTML='<div class="empty-state">Loading...</div>';
+  const id = document.getElementById('inv-sel').value;
+  const list = document.getElementById('inv-list');
+  const purge = document.getElementById('purge-inv-btn');
+  if (!id) { list.innerHTML = '<div class="empty-state">Select a service</div>'; purge.disabled = true; return; }
+  purge.disabled = false;
+  list.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const total=await sbCount(`codes?service_id=eq.${id}`);
-    const avail=await sbCount(`codes?service_id=eq.${id}&is_used=eq.false`);
-    document.getElementById('inv-stat').textContent=`${avail} available · ${total-avail} sent · ${total} total (showing up to 300)`;
-    const codes=await sb(`codes?service_id=eq.${id}&order=is_used.asc,created_at.desc&limit=300`);
-    if(!codes||!codes.length){list.innerHTML='<div class="empty-state">No accounts</div>';return;}
-    list.innerHTML=codes.map(c=>`
+    const total = await sbCount(`codes?service_id=eq.${id}`);
+    const avail = await sbCount(`codes?service_id=eq.${id}&is_used=eq.false`);
+    document.getElementById('inv-stat').textContent = `${avail} available · ${total-avail} sent · ${total} total (showing up to 300)`;
+    const codes = await sb(`codes?service_id=eq.${id}&order=is_used.asc,created_at.desc&limit=300`);
+    if (!codes || !codes.length) { list.innerHTML = '<div class="empty-state">No accounts</div>'; return; }
+    list.innerHTML = codes.map(c => `
       <div class="code-row">
         <pre class="code-text">${escHtml(c.code_text)}</pre>
         <span class="code-badge ${c.is_used?'cb-used':'cb-avail'}">${c.is_used?'Sent':'Avail'}</span>
-        ${c.is_used?`<button class="btn btn-cyan btn-sm" onclick="reuseCodeInv(${c.id})" title="Mark available again">↺ Reuse</button>`:''}
+        ${c.is_used ? `<button class="btn btn-cyan btn-sm" onclick="reuseCodeInv(${c.id})">↺ Reuse</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="delCodeInv(${c.id})">✕</button>
       </div>`).join('');
-  } catch(e){list.innerHTML='<div class="empty-state">Failed to load</div>';}
+  } catch(e) { list.innerHTML = '<div class="empty-state">Failed to load</div>'; }
 }
 async function reuseCodeInv(id) {
   try {
     await sb(`codes?id=eq.${id}`, { method:'PATCH', body:{ is_used:false }, prefer:'return=minimal' });
     toast('✓ Account marked as available');
     loadInv();
-  } catch(e){ toast('Failed to reuse', true); }
+  } catch(e) { toast('Failed to reuse', true); }
 }
 async function delCodeInv(id) {
-  if(!confirm('Delete this account?')) return;
+  if (!confirm('Delete this account?')) return;
   await sb(`codes?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
   toast('✓ Deleted');
   loadInv();
 }
 async function purgeUsedInv() {
-  const id=document.getElementById('inv-sel').value;
-  if(!id||!confirm('Delete all SENT accounts?')) return;
+  const id = document.getElementById('inv-sel').value;
+  if (!id || !confirm('Delete all SENT accounts?')) return;
   await sb(`codes?service_id=eq.${id}&is_used=eq.true`, { method:'DELETE', prefer:'return=minimal' });
   toast('✓ Sent accounts purged');
   loadInv(); loadDashboard();
 }
 
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ── CLAIMS PAGE ─────────────────────────────────────────
+async function loadClaims() {
+  try {
+    const now = new Date().toISOString();
+    const all     = await sbCount('pending_claims');
+    const claimed = await sbCount('pending_claims?claimed=eq.true');
+    const pending = await sbCount(`pending_claims?claimed=eq.false&expires_at=gt.${now}`);
+    const expired = await sbCount(`pending_claims?claimed=eq.false&expires_at=lt.${now}`);
+
+    document.getElementById('cl-total').textContent   = all;
+    document.getElementById('cl-claimed').textContent = claimed;
+    document.getElementById('cl-pending').textContent = pending;
+    document.getElementById('cl-expired').textContent = expired;
+
+    const claims = await sb('pending_claims?order=created_at.desc&limit=100');
+    const list = document.getElementById('claims-list');
+    if (!claims || !claims.length) {
+      list.innerHTML = '<div class="empty-state">No claims yet</div>';
+      return;
+    }
+    list.innerHTML = claims.map(c => {
+      const isExpired = !c.claimed && new Date(c.expires_at) < new Date();
+      const badgeCls  = c.claimed ? 'cb-claimed' : isExpired ? 'cb-expired' : 'cb-pending';
+      const badgeTxt  = c.claimed ? 'Claimed' : isExpired ? 'Expired' : 'Pending';
+      const created   = new Date(c.created_at).toLocaleString();
+      const expires   = new Date(c.expires_at).toLocaleString();
+      return `<div class="code-row">
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--text);margin-bottom:4px">${escHtml(c.service_name?.toUpperCase() || '—')}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Token: <span style="color:var(--violet3)">${c.token.slice(0,18)}…</span></div>
+          <div style="font-size:10px;color:var(--muted)">Created: ${created} &nbsp;·&nbsp; Expires: ${expires}</div>
+        </div>
+        <span class="code-badge ${badgeCls}">${badgeTxt}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteClaim('${c.token}')">✕</button>
+      </div>`;
+    }).join('');
+  } catch(e) { toast('Failed to load claims', true); }
+}
+
+async function deleteClaim(token) {
+  await sb(`pending_claims?token=eq.${token}`, { method:'DELETE', prefer:'return=minimal' });
+  toast('✓ Claim deleted');
+  loadClaims();
+}
+
+async function purgeExpiredClaims() {
+  if (!confirm('Delete all expired (unclaimed) claims?')) return;
+  const now = new Date().toISOString();
+  await sb(`pending_claims?claimed=eq.false&expires_at=lt.${now}`, { method:'DELETE', prefer:'return=minimal' });
+  toast('✓ Expired claims purged');
+  loadClaims();
+}
+
+async function purgeAllClaims() {
+  if (!confirm('Delete ALL claims? This cannot be undone.')) return;
+  await sb(`pending_claims?token=neq.null`, { method:'DELETE', prefer:'return=minimal' });
+  toast('✓ All claims purged');
+  loadClaims();
+}
+
+// ── UTILS ───────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
 
 let toastT;
 function toast(msg, isErr=false) {
-  const el=document.getElementById('toast');
-  el.textContent=msg;
-  el.className=isErr?'err show':'show';
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = isErr ? 'err show' : 'show';
   clearTimeout(toastT);
-  toastT=setTimeout(()=>el.className=el.className.replace(' show','').replace('show',''),3000);
+  toastT = setTimeout(() => el.className = el.className.replace(' show','').replace('show',''), 3000);
 }
 </script>
 </body>
